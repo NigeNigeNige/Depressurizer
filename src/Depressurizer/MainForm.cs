@@ -1442,7 +1442,6 @@ namespace Depressurizer
 
             FillCategoryList();
 
-            lstMultiCat.BeginUpdate();
             foreach (Category category in CurrentProfile.GameData.Categories)
             {
                 if (category != CurrentProfile.GameData.FavoriteCategory)
