@@ -525,6 +525,7 @@ namespace Depressurizer
                     if (i.Text == c.Name)
                     {
                         found = true;
+                        break;
                     }
                 }
 
@@ -1504,6 +1505,7 @@ namespace Depressurizer
 
             UpdateGameCheckStates();
             lstMultiCat.EndUpdate();
+
             mlblCategoryCount.Font = new Font("Arial", 8);
             mlblCategoryCount.Text = string.Format(CultureInfo.CurrentCulture, "{0} {1}", lstCategories.Items.Count, Resources.Categories);
 
@@ -1512,6 +1514,7 @@ namespace Depressurizer
 
         private void FillAutoCatLists()
         {
+            lvAutoCatType.BeginUpdate();
             lvAutoCatType.Items.Clear();
 
             // Prepare main menu list
@@ -1521,30 +1524,30 @@ namespace Depressurizer
             {
                 foreach (AutoCat autoCat in CurrentProfile.AutoCats)
                 {
-                    if (autoCat == null)
+                    if (autoCat != null)
                     {
-                        continue;
+                        // Fill main screen dropdown
+                        ListViewItem listItem = new ListViewItem(autoCat.DisplayName)
+                        {
+                            Tag = autoCat,
+                            Name = autoCat.Name,
+                            Checked = autoCat.Selected
+                        };
+                        lvAutoCatType.Items.Add(listItem);
+
+                        // Fill main menu list
+                        ToolStripItem item = menu_Tools_Autocat_List.Items.Add(autoCat.DisplayName);
+                        item.Tag = autoCat;
+                        item.Name = autoCat.Name;
+                        item.Click += menuToolsAutocat_Item_Click;
                     }
-
-                    // Fill main screen dropdown
-                    ListViewItem listItem = new ListViewItem(autoCat.DisplayName)
-                    {
-                        Tag = autoCat,
-                        Name = autoCat.Name,
-                        Checked = autoCat.Selected
-                    };
-                    lvAutoCatType.Items.Add(listItem);
-
-                    // Fill main menu list
-                    ToolStripItem item = menu_Tools_Autocat_List.Items.Add(autoCat.DisplayName);
-                    item.Tag = autoCat;
-                    item.Name = autoCat.Name;
-                    item.Click += menuToolsAutocat_Item_Click;
                 }
             }
 
             // Finish main menu list
             menu_Tools_AutocatAll.Enabled = menu_Tools_Autocat_List.Items.Count > 0;
+
+            lvAutoCatType.EndUpdate();
         }
 
         /// <summary>
@@ -1555,17 +1558,16 @@ namespace Depressurizer
             object selected = lstCategories.SelectedItems.Count > 0 ? lstCategories.SelectedItems[0].Tag : null;
             int selectedIndex = lstCategories.SelectedItems.Count > 0 ? lstCategories.SelectedIndices[0] : -1;
 
+            lstCategories.BeginUpdate();
             lstCategories.Items.Clear();
 
             if (!ProfileLoaded)
             {
+                lstCategories.EndUpdate();
                 return;
             }
 
             CurrentProfile.GameData.Categories.Sort();
-
-            lstCategories.BeginUpdate();
-            lstCategories.Items.Clear();
 
             //calculate number of hidden, VR and uncategorized games
             int all = 0;
@@ -2083,7 +2085,7 @@ namespace Depressurizer
         /// <summary>
         ///     Attempts to import steam categories
         /// </summary>
-        private void ImportConfig()
+        private void ImportConfig(bool refreshList = true)
         {
             if (!ProfileLoaded)
             {
@@ -2098,7 +2100,10 @@ namespace Depressurizer
                 if (count > 0)
                 {
                     MakeChange(true);
-                    FullListRefresh();
+                    if (refreshList)
+                    {
+                        FullListRefresh();
+                    }
                 }
             }
             catch (Exception e)
@@ -2682,12 +2687,12 @@ namespace Depressurizer
 
             if (CurrentProfile.AutoUpdate)
             {
-                UpdateLibrary();
+                UpdateLibrary(refreshList: false);
             }
 
             if (CurrentProfile.AutoImport)
             {
-                ImportConfig();
+                ImportConfig(refreshList: false);
             }
 
             Cursor = Cursors.Default;
